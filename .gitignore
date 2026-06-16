@@ -7,10 +7,27 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Dependency directories
+node_modules/
+wildlog-frontend/node_modules/
+wildlog-backend/node_modules/
+
+# Build outputs
+dist/
+dist-ssr/
+wildlog-frontend/dist/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+wildlog-backend/.env
+
+# Database
+wildlog-backend/wildlog.db
+
+# User uploads
+wildlog-backend/uploads/
 
 # Editor directories and files
 .vscode/*
