@@ -8,7 +8,6 @@ import Sidebar from '../../components/common/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import useBoards from '../../hooks/useBoards';
 
-// Leaflet 기본 아이콘 수정
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
@@ -26,7 +25,6 @@ function LocationMarker({ onLocationSelect, position }) {
       onLocationSelect(e.latlng.lat, e.latlng.lng);
     },
   });
-
   return position ? <Marker position={position} /> : null;
 }
 
@@ -47,6 +45,7 @@ export default function PostEdit() {
     lat: null,
     lng: null
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchPost();
@@ -57,7 +56,6 @@ export default function PostEdit() {
       const response = await fetch(`http://localhost:5000/api/posts/${id}`);
       const data = await response.json();
       
-      // 작성자 확인
       if (data.user_id !== user?.id) {
         alert('수정 권한이 없습니다.');
         navigate(-1);
@@ -91,7 +89,7 @@ export default function PostEdit() {
     setImages([...images, ...files]);
     const newPreviews = files.map(file => URL.createObjectURL(file));
     setPreviews([...previews, ...newPreviews]);
-    setExistingImages([]); // 새 이미지가 들어오면 기존 이미지는 초기화 (전체 교체 방식)
+    setExistingImages([]);
   };
 
   const removeImage = (index) => {
@@ -113,6 +111,7 @@ export default function PostEdit() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
     const data = new FormData();
     data.append('title', formData.title);
@@ -140,111 +139,148 @@ export default function PostEdit() {
     } catch (err) {
       console.error(err);
       alert('수정 중 오류가 발생했습니다.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 text-slate-100 flex flex-col font-sans">
       <Header onToggleSidebar={() => setIsSidebarOpen(true)} />
       
-      <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-12">
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 md:px-6 py-8 md:py-12">
         <div className="mb-10">
-          <h1 className="text-3xl font-black text-white mb-2">탐사 기록 수정</h1>
+          <div className="flex items-center gap-3 mb-2">
+            <span className="w-1.5 h-7 bg-gradient-to-b from-emerald-500 to-emerald-400 rounded-full"></span>
+            <h1 className="text-2xl md:text-3xl font-bold text-white">탐사 기록 수정</h1>
+          </div>
+          <p className="text-slate-500 text-sm font-medium ml-5">관찰 기록을 업데이트하세요.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8 bg-slate-900/50 border border-slate-800 p-10 rounded-[2.5rem] shadow-2xl backdrop-blur-sm">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-3">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">생물 이름</label>
+        <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8 bg-slate-900/50 border border-slate-800/60 p-6 md:p-10 rounded-[2rem] md:rounded-[2.5rem] shadow-2xl backdrop-blur-sm">
+          {/* Title & Category */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">생물 이름</label>
               <input 
                 type="text" 
                 required
                 value={formData.title}
                 onChange={(e) => setFormData({...formData, title: e.target.value})}
-                className="w-full bg-slate-950 border border-slate-800 p-4 rounded-2xl outline-none focus:border-emerald-500 transition-all text-sm" 
+                className="w-full bg-slate-950 border border-slate-800/60 p-3.5 rounded-xl outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all text-sm" 
               />
             </div>
-            <div className="space-y-3">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">분류군 선택</label>
-              <select 
-                value={formData.category}
-                onChange={(e) => setFormData({...formData, category: e.target.value})}
-                className="w-full bg-slate-950 border border-slate-800 p-4 rounded-2xl outline-none focus:border-emerald-500 transition-all appearance-none text-sm"
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">분류군 선택</label>
+              <div className="relative">
+                <select 
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800/60 p-3.5 rounded-xl outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all appearance-none text-sm text-slate-200"
+                >
+                  {boards.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+                <svg className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Map */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">위치 수정 (지도 클릭)</label>
+            <div className="h-56 md:h-64 w-full rounded-xl md:rounded-2xl overflow-hidden border border-slate-800/60 bg-slate-950 relative" style={{ zIndex: 0 }}>
+              <MapContainer 
+                center={formData.lat ? [formData.lat, formData.lng] : [36.5, 127.5]} 
+                zoom={formData.lat ? 13 : 7} 
+                style={{ width: '100%', height: '100%' }}
               >
-                 {boards.map(b => <option key={b} value={b}>{b}</option>)}
-              </select>
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <LocationMarker 
+                  onLocationSelect={handleLocationSelect} 
+                  position={formData.lat ? [formData.lat, formData.lng] : null} 
+                />
+              </MapContainer>
             </div>
           </div>
 
-          <div className="space-y-3">
-            <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">위치 수정 (지도 클릭)</label>
-            <div className="h-64 w-full rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 relative" style={{ zIndex: 0 }}>
-               <MapContainer 
-                 center={formData.lat ? [formData.lat, formData.lng] : [36.5, 127.5]} 
-                 zoom={formData.lat ? 13 : 7} 
-                 style={{ width: '100%', height: '100%' }}
-               >
-                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                  <LocationMarker 
-                    onLocationSelect={handleLocationSelect} 
-                    position={formData.lat ? [formData.lat, formData.lng] : null} 
-                  />
-               </MapContainer>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1 flex justify-between">
+          {/* Images */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1 flex justify-between">
               <span>사진 관리 ({previews.length}/5)</span>
             </label>
             
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-               {previews.map((src, idx) => (
-                 <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border border-slate-700 group">
-                    <img src={src} alt="" className="w-full h-full object-cover" />
-                    <button 
-                      type="button"
-                      onClick={() => removeImage(idx)}
-                      className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      ×
-                    </button>
-                 </div>
-               ))}
-               
-               {previews.length < 5 && (
-                 <label className="aspect-square bg-slate-950 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center text-slate-700 hover:border-emerald-500/50 hover:bg-slate-900 transition-all cursor-pointer group">
-                    <span className="text-2xl group-hover:scale-110 transition-transform">+</span>
-                    <input type="file" multiple accept="image/*" onChange={handleImageChange} className="hidden" />
-                 </label>
-               )}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {previews.map((src, idx) => (
+                <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-slate-700/60 group">
+                  <img src={src} alt="" className="w-full h-full object-cover" />
+                  <button 
+                    type="button"
+                    onClick={() => removeImage(idx)}
+                    className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500/80 text-white rounded-full text-xs font-bold opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center hover:bg-red-500"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+              
+              {previews.length < 5 && (
+                <label className="aspect-square bg-slate-950 border-2 border-dashed border-slate-800/60 rounded-xl flex flex-col items-center justify-center text-slate-700 hover:border-emerald-500/40 hover:bg-slate-900/80 transition-all cursor-pointer group">
+                  <svg className="w-6 h-6 group-hover:scale-110 transition-transform text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  <span className="text-[10px] text-slate-700 mt-1">Add Photo</span>
+                  <input type="file" multiple accept="image/*" onChange={handleImageChange} className="hidden" />
+                </label>
+              )}
             </div>
           </div>
 
-          <div className="space-y-3">
-            <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">탐사 내용</label>
+          {/* Content */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">탐사 내용</label>
             <textarea 
               rows="6" 
               required
               value={formData.content}
               onChange={(e) => setFormData({...formData, content: e.target.value})}
-              className="w-full bg-slate-950 border border-slate-800 p-6 rounded-[2rem] outline-none focus:border-emerald-500 transition-all resize-none text-sm leading-relaxed"
+              className="w-full bg-slate-950 border border-slate-800/60 p-5 rounded-xl outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all resize-none text-sm leading-relaxed"
             ></textarea>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-4 pt-4">
+          {/* Buttons */}
+          <div className="flex flex-col md:flex-row gap-3 pt-2">
             <button 
               type="button" 
               onClick={() => navigate(-1)}
-              className="w-full md:flex-1 bg-slate-800 hover:bg-slate-700 py-4 rounded-2xl font-black text-slate-400 transition-all text-sm"
+              className="w-full md:flex-1 bg-slate-800 hover:bg-slate-700 py-3.5 rounded-xl font-bold text-slate-400 transition-all text-sm border border-slate-700/50"
             >
               취소
             </button>
             <button 
               type="submit" 
-              className="w-full md:flex-[2] bg-emerald-600 hover:bg-emerald-500 py-4 rounded-2xl font-black shadow-lg shadow-emerald-900/20 transition-all text-sm"
+              disabled={isSubmitting}
+              className="w-full md:flex-[2] bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 disabled:opacity-60 py-3.5 rounded-xl font-bold shadow-lg shadow-emerald-900/20 transition-all text-sm text-white flex items-center justify-center gap-2"
             >
-              수정 완료하기
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  수정 중...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                  수정 완료하기
+                </>
+              )}
             </button>
           </div>
         </form>

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header';
 import Sidebar from '../../components/common/Sidebar';
 
 export default function Mission() {
+  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [missions, setMissions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,70 +27,103 @@ export default function Mission() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 text-slate-100 flex flex-col font-sans">
       <Header onToggleSidebar={() => setIsSidebarOpen(true)} />
       
-      <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-12">
-        <div className="flex justify-between items-center mb-12">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 md:px-6 py-8 md:py-12">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
           <div>
-            <h1 className="text-4xl font-black text-white mb-2">탐사 미션 센터</h1>
-            <p className="text-slate-500 font-medium">야생의 부름에 응답하고 보상을 획득하세요.</p>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="w-1.5 h-7 bg-gradient-to-b from-orange-500 to-orange-400 rounded-full"></span>
+              <h1 className="text-2xl md:text-4xl font-bold text-white">탐사 미션 센터</h1>
+            </div>
+            <p className="text-slate-500 font-medium ml-5">야생의 부름에 응답하고 보상을 획득하세요.</p>
           </div>
-          <button className="bg-emerald-600 hover:bg-emerald-500 px-6 py-3 rounded-2xl font-black shadow-lg shadow-emerald-900/30 transition-all active:scale-95">
-            + 미션 만들기
+          <button className="w-full md:w-auto bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 px-6 py-3 rounded-2xl font-bold shadow-lg shadow-emerald-900/30 transition-all active:scale-95 text-white flex items-center gap-2 justify-center">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            미션 만들기
           </button>
         </div>
 
         {isLoading ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="bg-slate-900 border border-slate-800 rounded-[2.5rem] h-64 animate-pulse" />
+              <div key={i} className="bg-slate-900/80 border border-slate-800/60 rounded-[2.5rem] h-72 animate-pulse" />
             ))}
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {missions.map(mission => (
-              <div key={mission.id} className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 hover:border-emerald-500/30 transition-all group relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-8">
-                  <span className="bg-slate-800 text-slate-400 text-[10px] font-black px-3 py-1 rounded-full border border-slate-700 uppercase tracking-widest">{mission.category || '기타'}</span>
+            {missions.map(mission => {
+              const progress = Math.round((mission.current_count / mission.target_count) * 100);
+              return (
+                <div 
+                  key={mission.id} 
+                  className="bg-slate-900/80 border border-slate-800/60 rounded-2xl md:rounded-[2.5rem] p-6 md:p-8 hover:border-emerald-500/30 transition-all group relative overflow-hidden"
+                >
+                  {/* Background gradient decoration */}
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                  
+                  <div className="relative z-10">
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-orange-500/20 to-orange-500/5 rounded-2xl flex items-center justify-center text-xl border border-orange-500/10">
+                          🎯
+                        </div>
+                        <div>
+                          <h2 className="text-xl md:text-2xl font-bold text-slate-100 group-hover:text-emerald-400 transition-colors">{mission.title}</h2>
+                          <p className="text-xs text-slate-500 font-medium mt-0.5">{mission.category || '전체'}</p>
+                        </div>
+                      </div>
+                      <span className="bg-slate-800/80 text-slate-400 text-[10px] font-bold px-3 py-1 rounded-full border border-slate-700/50 uppercase tracking-widest whitespace-nowrap">
+                        진행중
+                      </span>
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-sm text-slate-400 leading-relaxed mb-6">{mission.description}</p>
+
+                    {/* Progress */}
+                    <div className="space-y-3 mb-6">
+                      <div className="flex justify-between text-xs font-bold text-slate-400">
+                        <span>진행률 {progress}%</span>
+                        <span className="text-emerald-400">{mission.current_count}건 / {mission.target_count}건</span>
+                      </div>
+                      <div className="w-full bg-slate-800/50 h-3 rounded-full overflow-hidden border border-slate-700/30">
+                        <div 
+                          className="bg-gradient-to-r from-emerald-600 to-emerald-400 h-full rounded-full transition-all duration-1000 ease-out shadow-lg shadow-emerald-500/10" 
+                          style={{ width: `${progress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    {/* Rewards & Deadline */}
+                    <div className="flex flex-wrap items-center gap-6 mb-6 py-4 border-t border-slate-800/40">
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-600 text-xs font-bold uppercase tracking-tighter">보상</span>
+                        <span className="text-sm font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/20">
+                          {mission.reward || '1,000 pt'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-600 text-xs font-bold uppercase tracking-tighter">마감</span>
+                        <span className="text-sm font-bold text-slate-300">
+                          {mission.end_date ? new Date(mission.end_date).toLocaleDateString() : '상시 진행'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action Button */}
+                    <button className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 py-4 rounded-2xl text-sm font-bold transition-all shadow-lg shadow-emerald-900/20 active:scale-[0.99] text-white">
+                      이 미션에 참여하기
+                    </button>
+                  </div>
                 </div>
-
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-2xl font-black text-slate-100 mb-2 group-hover:text-emerald-400 transition-colors">{mission.title}</h2>
-                    <p className="text-sm text-slate-500 leading-relaxed max-w-md">{mission.description}</p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex justify-between text-xs font-bold text-slate-400">
-                      <span>진행률 {Math.round((mission.current_count / mission.target_count) * 100)}%</span>
-                      <span>{mission.current_count}건 달성</span>
-                    </div>
-                    <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700/50 shadow-inner">
-                      <div 
-                        className="bg-gradient-to-r from-emerald-600 to-emerald-400 h-full rounded-full transition-all duration-1000 ease-out"
-                        style={{ width: `${(mission.current_count / mission.target_count) * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-6 pt-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-600 text-xs font-black uppercase tracking-tighter">보상</span>
-                      <span className="text-sm font-bold text-emerald-400">{mission.reward || '1,000 pt'}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-600 text-xs font-black uppercase tracking-tighter">마감</span>
-                      <span className="text-sm font-bold text-slate-300">{mission.end_date ? new Date(mission.end_date).toLocaleDateString() : '상시 진행'}</span>
-                    </div>
-                  </div>
-
-                  <button className="w-full bg-slate-800 hover:bg-emerald-600 py-4 rounded-2xl text-sm font-black transition-all group-hover:shadow-lg">
-                     이 미션에 참여하기
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
