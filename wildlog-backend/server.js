@@ -181,11 +181,31 @@ async function setupDatabase() {
     id INT PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(255) NOT NULL,
     description TEXT,
+    category VARCHAR(255),
+    tags TEXT,
+    reward VARCHAR(255),
     target_count INT DEFAULT 100,
     current_count INT DEFAULT 0,
     image TEXT,
+    created_by INT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     end_date DATETIME
   )`);
+
+  const missionColumnsToAdd = [
+    { name: 'category', sql: "ALTER TABLE missions ADD COLUMN category VARCHAR(255) NULL AFTER description" },
+    { name: 'tags', sql: "ALTER TABLE missions ADD COLUMN tags TEXT NULL AFTER category" },
+    { name: 'reward', sql: "ALTER TABLE missions ADD COLUMN reward VARCHAR(255) NULL AFTER tags" },
+    { name: 'created_by', sql: "ALTER TABLE missions ADD COLUMN created_by INT NULL AFTER image" },
+    { name: 'created_at', sql: "ALTER TABLE missions ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP AFTER created_by" }
+  ];
+
+  for (const column of missionColumnsToAdd) {
+    const [missionCols] = await db.query(`SHOW COLUMNS FROM missions LIKE ?`, [column.name]);
+    if (missionCols.length === 0) {
+      await db.query(column.sql);
+    }
+  }
 
   // 6. 알림 테이블
   await db.query(`CREATE TABLE IF NOT EXISTS notifications (
@@ -724,8 +744,92 @@ app.get('/api/map/posts', async (req, res) => {
 // --- 6. 미션 (Mission) ---
 app.get('/api/missions', async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT * FROM missions WHERE end_date IS NULL OR end_date > NOW() ORDER BY end_date ASC");
+    const [rows] = await db.query(`
+      SELECT m.*,
+        (SELECT COUNT(*) FROM posts p WHERE p.mission_id = m.id) as post_count,
+        (SELECT COUNT(DISTINCT p.user_id) FROM posts p WHERE p.mission_id = m.id) as participant_count,
+        CASE
+          WHEN m.target_count > 0 THEN LEAST(100, ROUND((m.current_count / m.target_count) * 100))
+          ELSE 0
+        END as progress
+      FROM missions m
+      WHERE m.end_date IS NULL OR m.end_date > NOW()
+      ORDER BY
+        CASE WHEN m.target_count > 0 AND m.current_count >= m.target_count THEN 1 ELSE 0 END ASC,
+        m.end_date IS NULL ASC,
+        m.end_date ASC,
+        m.created_at DESC
+    `);
     res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/missions/:id', async (req, res) => {
+  try {
+    const [[mission]] = await db.query(`
+      SELECT m.*,
+        (SELECT COUNT(*) FROM posts p WHERE p.mission_id = m.id) as post_count,
+        (SELECT COUNT(DISTINCT p.user_id) FROM posts p WHERE p.mission_id = m.id) as participant_count,
+        CASE
+          WHEN m.target_count > 0 THEN LEAST(100, ROUND((m.current_count / m.target_count) * 100))
+          ELSE 0
+        END as progress
+      FROM missions m
+      WHERE m.id = ?
+    `, [req.params.id]);
+
+    if (!mission) return res.status(404).json({ error: '미션을 찾을 수 없습니다.' });
+    res.json(mission);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/missions', async (req, res) => {
+  const {
+    user_id,
+    title,
+    description,
+    category,
+    tags,
+    reward,
+    target_count,
+    end_date
+  } = req.body;
+
+  if (!title || !title.trim()) {
+    return res.status(400).json({ error: '미션 이름을 입력해주세요.' });
+  }
+
+  const normalizedTarget = Number.parseInt(target_count, 10);
+  if (!Number.isFinite(normalizedTarget) || normalizedTarget < 1) {
+    return res.status(400).json({ error: '목표 기록 수는 1 이상이어야 합니다.' });
+  }
+
+  const normalizedTags = Array.isArray(tags)
+    ? tags.map(tag => String(tag).trim()).filter(Boolean).join(',')
+    : String(tags || '').split(',').map(tag => tag.trim()).filter(Boolean).join(',');
+
+  try {
+    const [result] = await db.query(`
+      INSERT INTO missions
+        (title, description, category, tags, reward, target_count, current_count, created_by, end_date)
+      VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
+    `, [
+      title.trim(),
+      description || '',
+      category || null,
+      normalizedTags || null,
+      reward || null,
+      normalizedTarget,
+      user_id || null,
+      end_date || null
+    ]);
+
+    const [[mission]] = await db.query('SELECT * FROM missions WHERE id = ?', [result.insertId]);
+    res.status(201).json({ message: '미션이 생성되었습니다.', mission });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

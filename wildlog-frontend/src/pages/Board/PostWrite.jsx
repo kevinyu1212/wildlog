@@ -43,17 +43,18 @@ export default function PostWrite() {
   const [searchParams] = useSearchParams();
   const { user, isLoggedIn } = useAuth();
   const { boards, loading: boardsLoading } = useBoards();
+  const requestedMissionId = searchParams.get('mission_id') || '';
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [images, setImages] = useState([]);
   const [previews, setPreviews] = useState([]);
   const [missions, setMissions] = useState([]);
-  const [missionLinked, setMissionLinked] = useState(false);
+  const [missionLinked, setMissionLinked] = useState(Boolean(requestedMissionId));
   const [isDragging, setIsDragging] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     category: searchParams.get('category') || '',
     content: '',
-    mission_id: '',
+    mission_id: requestedMissionId,
     lat: null,
     lng: null
   });
@@ -79,21 +80,55 @@ export default function PostWrite() {
     handleGetCurrentLocation();
   }, [boards]);
 
+  const getMissionTags = (mission) => (
+    String(mission.tags || '')
+      .split(',')
+      .map(tag => tag.trim().toLowerCase())
+      .filter(Boolean)
+  );
+
+  const getMissionMatchScore = (mission) => {
+    const categoryMatch = mission.category && mission.category === formData.category ? 4 : 0;
+    const haystack = `${formData.title} ${formData.content}`.toLowerCase();
+    const missionTitle = String(mission.title || '').toLowerCase();
+    const titleMatch = missionTitle && haystack.includes(missionTitle) ? 3 : 0;
+    const tagMatchCount = getMissionTags(mission).filter(tag => haystack.includes(tag)).length;
+    return categoryMatch + titleMatch + tagMatchCount;
+  };
+
   // 자동 미션 연동 로직
   useEffect(() => {
-    if (missions.length > 0) {
-      const matchedMission = missions.find(m => 
-        (m.category === formData.category) || 
-        (formData.title && m.title.includes(formData.title)) ||
-        (formData.title && formData.title.includes(m.title))
-      );
-      
-      if (matchedMission) {
+    if (missions.length === 0) return;
+
+    if (requestedMissionId) {
+      const requestedMission = missions.find(m => String(m.id) === requestedMissionId);
+      if (requestedMission) {
         setMissionLinked(true);
-        setFormData(prev => ({ ...prev, mission_id: matchedMission.id.toString() }));
+        setFormData(prev => {
+          const nextCategory = requestedMission.category || prev.category;
+          if (prev.mission_id === requestedMissionId && prev.category === nextCategory) return prev;
+          return {
+            ...prev,
+            mission_id: requestedMissionId,
+            category: nextCategory
+          };
+        });
       }
+      return;
     }
-  }, [formData.category, formData.title, missions]);
+
+    const matchedMission = missions
+      .map(mission => ({ mission, score: getMissionMatchScore(mission) }))
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score)[0]?.mission;
+
+    if (matchedMission && String(matchedMission.id) !== String(formData.mission_id)) {
+      setMissionLinked(true);
+      setFormData(prev => ({ ...prev, mission_id: matchedMission.id.toString() }));
+    }
+  }, [formData.category, formData.title, formData.content, formData.mission_id, missions, requestedMissionId]);
+
+  const selectedMission = missions.find(m => String(m.id) === String(formData.mission_id));
 
   const handleGetCurrentLocation = () => {
     if (navigator.geolocation) {
@@ -331,17 +366,39 @@ export default function PostWrite() {
               <label htmlFor="mission-link" className="font-bold text-sm text-slate-300">현재 진행 중인 미션과 연동하기</label>
             </div>
             {missionLinked && (
-              <select
-                value={formData.mission_id}
-                onChange={(e) => setFormData({ ...formData, mission_id: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800/60 p-3 rounded-xl outline-none text-xs text-slate-400"
-                required={missionLinked}
-              >
-                <option value="">참여할 미션을 선택하세요</option>
-                {missions.map(m => (
-                  <option key={m.id} value={m.id}>{m.title}</option>
-                ))}
-              </select>
+              <div className="space-y-3">
+                <select
+                  value={formData.mission_id}
+                  onChange={(e) => setFormData({ ...formData, mission_id: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800/60 p-3 rounded-xl outline-none text-xs text-slate-400"
+                  required={missionLinked}
+                >
+                  <option value="">참여할 미션을 선택하세요</option>
+                  {missions.map(m => (
+                    <option key={m.id} value={m.id}>{m.title}</option>
+                  ))}
+                </select>
+                {selectedMission && (
+                  <div className="rounded-xl border border-emerald-500/10 bg-slate-950/70 p-3">
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <p className="text-xs font-bold text-emerald-300 truncate">{selectedMission.title}</p>
+                      <span className="text-[10px] font-bold text-slate-500 whitespace-nowrap">
+                        {selectedMission.current_count}/{selectedMission.target_count}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {getMissionTags(selectedMission).slice(0, 5).map(tag => (
+                        <span key={tag} className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-[10px] font-bold text-emerald-300 border border-emerald-500/20">
+                          #{tag}
+                        </span>
+                      ))}
+                      {getMissionTags(selectedMission).length === 0 && (
+                        <span className="text-[10px] text-slate-600">분류군 또는 미션명 기준으로 자동 연결되었습니다.</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 

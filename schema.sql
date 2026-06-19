@@ -85,9 +85,14 @@ CREATE TABLE IF NOT EXISTS missions (
     id INT PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(255) NOT NULL,
     description TEXT,
+    category VARCHAR(255),
+    tags TEXT,
+    reward VARCHAR(255),
     target_count INT DEFAULT 100,
     current_count INT DEFAULT 0,
     image TEXT,
+    created_by INT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     end_date DATETIME
 );
 

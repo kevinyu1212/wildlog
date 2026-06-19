@@ -14,6 +14,7 @@ import MyComments from './pages/MyPage/MyComments';
 import Notification from './pages/Notification/Notification';
 import Favorites from './pages/Favorites/Favorites';
 import Mission from './pages/Mission/Mission';
+import MissionCreate from './pages/Mission/MissionCreate';
 import Observer from './pages/Observer/Observer';
 import UserProfile from './pages/Observer/UserProfile';
 import BiologyMap from './pages/BiologyMap/BiologyMap';
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="/notifications" element={<Notification />} />
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/missions" element={<Mission />} />
+        <Route path="/missions/new" element={<MissionCreate />} />
         <Route path="/observers" element={<Observer />} />
         <Route path="/profile/:username" element={<UserProfile />} />
         <Route path="/map" element={<BiologyMap />} />
