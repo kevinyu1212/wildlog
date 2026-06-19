@@ -27,6 +27,7 @@ import Terms from './pages/Info/Terms';
 import About from './pages/Info/About';
 import Privacy from './pages/Info/Privacy';
 import Guide from './pages/Info/Guide';
+import Points from './pages/Info/Points';
 
 export default function App() {
   return (
@@ -65,6 +66,7 @@ export default function App() {
         <Route path="/about" element={<About />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/guide" element={<Guide />} />
+        <Route path="/points" element={<Points />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

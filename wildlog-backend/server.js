@@ -76,7 +76,26 @@ async function setupDatabase() {
     species INT DEFAULT 0,
     comments INT DEFAULT 0,
     likes INT DEFAULT 0,
-    profile_image TEXT
+    profile_image TEXT,
+    points INT DEFAULT 0
+  )`);
+
+  // points 컬럼 마이그레이션 (기존 테이블에 추가)
+  const [pointsCol] = await db.query("SHOW COLUMNS FROM users LIKE 'points'");
+  if (pointsCol.length === 0) {
+    await db.query("ALTER TABLE users ADD COLUMN points INT DEFAULT 0 AFTER profile_image");
+  }
+  
+  // 1-0. 포인트 내역 테이블
+  await db.query(`CREATE TABLE IF NOT EXISTS point_history (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    points INT NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    description VARCHAR(255),
+    reference_id INT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id)
   )`);
 
   // birthday, security_question, security_answer 컬럼 마이그레이션
@@ -241,6 +260,20 @@ async function setupDatabase() {
   const [rows] = await db.query("SELECT COUNT(*) as count FROM missions");
   if (rows[0].count === 0) {
     // 더미 데이터 자동 삽입 제거: 사용자 필요시 직접 추가
+  }
+}
+
+// --- 포인트 적립 헬퍼 함수 ---
+async function addPoints(userId, points, type, description, referenceId = null) {
+  if (!userId || !points) return;
+  try {
+    await db.query(
+      "INSERT INTO point_history (user_id, points, type, description, reference_id) VALUES (?, ?, ?, ?, ?)",
+      [userId, points, type, description, referenceId]
+    );
+    await db.query("UPDATE users SET points = points + ? WHERE id = ?", [points, userId]);
+  } catch (err) {
+    console.error('Failed to add points:', err);
   }
 }
 
@@ -537,6 +570,7 @@ app.post('/api/posts', upload.array('images', 5), async (req, res) => {
     const [result] = await db.query(`INSERT INTO posts (user_id, board_id, title, content, category, images, lat, lng, mission_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
       [user_id, board_id, title, content, category, imageUrls, lat || null, lng || null, mission_id || null]);
     await db.query("UPDATE users SET records = records + 1 WHERE id = ?", [user_id]);
+    await addPoints(user_id, 10, 'post', '새 탐사 기록을 등록했습니다.', result.insertId);
     
     if (mission_id) {
       await db.query('UPDATE missions SET current_count = current_count + 1 WHERE id = ?', [mission_id]);
@@ -574,7 +608,7 @@ app.get('/api/users/:id', async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT id, email, username, birthday, security_question, joined_at,
-        records, species, comments, likes, profile_image,
+        records, species, comments, likes, profile_image, points,
         (SELECT COUNT(*) FROM post_likes WHERE user_id = users.id) as sent_likes
       FROM users WHERE id = ?
     `, [req.params.id]);
@@ -835,6 +869,32 @@ app.post('/api/missions', async (req, res) => {
   }
 });
 
+// --- Point History API ---
+app.get('/api/users/:id/points/history', async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      "SELECT * FROM point_history WHERE user_id = ? ORDER BY created_at DESC LIMIT 50",
+      [req.params.id]
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/users/:id/points', async (req, res) => {
+  try {
+    const [[{ points }]] = await db.query("SELECT points FROM users WHERE id = ?", [req.params.id]);
+    const [{ total_earned }] = await db.query(
+      "SELECT COALESCE(SUM(points), 0) as total_earned FROM point_history WHERE user_id = ? AND points > 0",
+      [req.params.id]
+    );
+    res.json({ points: points || 0, total_earned: total_earned || 0 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- 7. 관찰자 (Observer/Ranking) ---
 app.get('/api/observers', async (req, res) => {
   try {
@@ -947,6 +1007,9 @@ app.post('/api/comments', async (req, res) => {
       }
     }
 
+    // 포인트 적립: 댓글 작성
+    await addPoints(user_id, 3, 'comment', '댓글을 작성했습니다.', result.insertId);
+
     res.json({ id: result.insertId });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -997,6 +1060,8 @@ app.post('/api/posts/:id/like', async (req, res) => {
       if (post && post.user_id !== user_id) {
         await db.query("INSERT INTO notifications (user_id, sender_id, post_id, type, content) VALUES (?, ?, ?, ?, ?)", 
           [post.user_id, user_id, post_id, 'like', `${sender.username}님이 "${post.title}" 게시물을 좋아합니다.`]);
+        // 포인트 적립: 게시글 작성자가 좋아요를 받으면 포인트 지급
+        await addPoints(post.user_id, 2, 'like_received', `"${post.title}" 게시글이 좋아요를 받았습니다.`, post_id);
       }
       
       res.json({ liked: true });

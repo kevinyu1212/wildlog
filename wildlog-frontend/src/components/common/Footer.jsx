@@ -7,6 +7,7 @@ const footerLinks = [
   { name: '사이트 소개', path: '/about' },
   { name: '개인정보처리방침', path: '/privacy' },
   { name: '이용안내', path: '/guide' },
+  { name: '⭐ 포인트 안내', path: '/points' },
 ];
 
 export default function Footer() {
