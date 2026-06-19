@@ -39,3 +39,16 @@ wildlog-backend/uploads/
 *.njsproj
 *.sln
 *.sw?
+
+
+node_modules/
+.env
+
+dist/
+build/
+coverage/
+
+.vscode/
+.idea/
+
+*.log
