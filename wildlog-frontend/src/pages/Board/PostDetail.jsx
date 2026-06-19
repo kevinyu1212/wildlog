@@ -191,6 +191,18 @@ export default function PostDetail() {
     }
   };
 
+  const goToAuthorProfile = () => {
+    if (!post?.author) return;
+    navigate(`/profile/${encodeURIComponent(post.author)}`);
+  };
+
+  const handleAuthorCardKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      goToAuthorProfile();
+    }
+  };
+
   const handleDelete = async () => {
     if (!window.confirm('정말 이 탐사 기록을 삭제하시겠습니까?')) return;
     try {
@@ -364,7 +376,13 @@ export default function PostDetail() {
           {/* Right: Author Info & Comments */}
           <aside className="w-full lg:w-96 space-y-6 md:space-y-8">
             {/* Author Card */}
-            <div className="bg-slate-900/80 border border-slate-800/60 p-6 md:p-8 rounded-2xl md:rounded-[2.5rem] shadow-xl">
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={goToAuthorProfile}
+              onKeyDown={handleAuthorCardKeyDown}
+              className="bg-slate-900/80 border border-slate-800/60 p-6 md:p-8 rounded-2xl md:rounded-[2.5rem] shadow-xl cursor-pointer hover:border-emerald-500/30 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+            >
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-14 h-14 bg-gradient-to-br from-slate-800 to-slate-900 rounded-full border-2 border-emerald-500/20 overflow-hidden flex items-center justify-center flex-shrink-0">
                   {post.author_img ? <img src={post.author_img} alt="" /> : (
@@ -388,7 +406,14 @@ export default function PostDetail() {
                   <p className="text-xs font-bold text-slate-300">{post.views.toLocaleString()}</p>
                 </div>
               </div>
-              <button className="w-full bg-slate-800 hover:bg-slate-700 py-3.5 rounded-xl text-xs font-bold transition-all border border-slate-700/50 text-slate-300">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goToAuthorProfile();
+                }}
+                className="w-full bg-slate-800 hover:bg-slate-700 py-3.5 rounded-xl text-xs font-bold transition-all border border-slate-700/50 text-slate-300"
+              >
                 관찰자 프로필 방문하기
               </button>
             </div>
