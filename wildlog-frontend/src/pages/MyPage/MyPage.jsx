@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header';
 import Sidebar from '../../components/common/Sidebar';
+import Footer from '../../components/common/Footer';
 import { useAuth } from '../../context/AuthContext';
 import MyInfo from './MyInfo/MyInfo';
 import MyGallery from './MyGallery/MyGallery';
@@ -153,6 +154,7 @@ export default function MyPage() {
         onClose={() => setIsSidebarOpen(false)} 
         boards={boards}
       />
+      <Footer />
     </div>
   );
 }

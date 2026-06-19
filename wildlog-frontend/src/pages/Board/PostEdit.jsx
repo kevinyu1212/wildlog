@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import Header from '../../components/common/Header';
 import Sidebar from '../../components/common/Sidebar';
+import Footer from '../../components/common/Footer';
 import { useAuth } from '../../context/AuthContext';
 import useBoards from '../../hooks/useBoards';
 
@@ -48,8 +49,12 @@ export default function PostEdit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!isLoggedIn) {
+      navigate('/login', { state: { from: `/edit/${id}` }, replace: true });
+      return;
+    }
     fetchPost();
-  }, [id]);
+  }, [id, isLoggedIn]);
 
   const fetchPost = async () => {
     try {
@@ -291,6 +296,7 @@ export default function PostEdit() {
         onClose={() => setIsSidebarOpen(false)} 
         boards={boards}
       />
+      <Footer />
     </div>
   );
 }

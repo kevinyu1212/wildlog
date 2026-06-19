@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header';
 import Sidebar from '../../components/common/Sidebar';
+import Footer from '../../components/common/Footer';
 
 export default function Observer() {
   const navigate = useNavigate();
@@ -178,6 +179,7 @@ export default function Observer() {
         onClose={() => setIsSidebarOpen(false)} 
         boards={boards}
       />
+      <Footer />
     </div>
   );
 }

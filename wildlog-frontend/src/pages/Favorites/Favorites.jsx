@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header';
 import Sidebar from '../../components/common/Sidebar';
+import Footer from '../../components/common/Footer';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Favorites() {
@@ -51,10 +52,10 @@ export default function Favorites() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-slate-100 flex flex-col items-center justify-center p-6 text-center">
         <span className="text-6xl mb-6">🔒</span>
         <p className="text-slate-400 font-medium mb-6">로그인이 필요한 서비스입니다.</p>
-        <button onClick={() => navigate('/login')} className="bg-emerald-600 px-8 py-3 rounded-xl font-bold">로그인하러 가기</button>
+        <button onClick={() => navigate('/login', { state: { from: '/favorites' } })} className="bg-gradient-to-r from-emerald-600 to-emerald-500 px-8 py-3 rounded-xl font-bold shadow-lg transition-all text-white">로그인하러 가기</button>
       </div>
     );
   }
@@ -133,7 +134,15 @@ export default function Favorites() {
           </div>
         ) : (
           <div className="py-20 text-center border-2 border-dashed border-slate-800/60 rounded-[3rem]">
-            <p className="text-slate-600">추후 업데이트 예정입니다.</p>
+            <span className="text-5xl mb-6 block">🔭</span>
+            <p className="text-slate-600 font-medium mb-2">즐겨찾기한 관찰자가 없습니다.</p>
+            <p className="text-[10px] text-slate-700">관찰자 페이지에서 관심 있는 대원을 추가해보세요.</p>
+            <button 
+              onClick={() => navigate('/observers')}
+              className="mt-6 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
+            >
+              관찰자 보러가기 →
+            </button>
           </div>
         )}
       </main>
@@ -143,6 +152,7 @@ export default function Favorites() {
         onClose={() => setIsSidebarOpen(false)} 
         boards={boards}
       />
+      <Footer />
     </div>
   );
 }

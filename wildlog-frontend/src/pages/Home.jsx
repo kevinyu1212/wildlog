@@ -74,7 +74,7 @@ export default function Home() {
   };
 
   const handleWriteClick = () => {
-    navigate(isLoggedIn ? '/write' : '/login');
+    navigate(isLoggedIn ? '/write' : '/login', { state: { from: '/write' } });
   };
 
   const missionProgress = getMissionProgress(hotMission);

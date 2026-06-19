@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header';
 import Sidebar from '../../components/common/Sidebar';
+import Footer from '../../components/common/Footer';
 
 export default function UserProfile() {
   const { username } = useParams();
@@ -138,6 +139,7 @@ export default function UserProfile() {
         onClose={() => setIsSidebarOpen(false)} 
         boards={boards}
       />
+      <Footer />
     </div>
   );
 }

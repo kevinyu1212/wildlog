@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header';
 import Sidebar from '../../components/common/Sidebar';
+import Footer from '../../components/common/Footer';
 import { useAuth } from '../../context/AuthContext';
 import useBoards from '../../hooks/useBoards';
 
@@ -218,6 +219,7 @@ export default function MissionCreate() {
       </main>
 
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} boards={boards} />
+      <Footer />
     </div>
   );
 }

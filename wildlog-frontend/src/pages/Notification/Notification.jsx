@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header';
 import Sidebar from '../../components/common/Sidebar';
+import Footer from '../../components/common/Footer';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Notification() {
+  const navigate = useNavigate();
   const { user, isLoggedIn } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -63,7 +66,7 @@ export default function Notification() {
           <span className="text-6xl block">🔒</span>
           <p className="text-slate-400 font-medium">로그인이 필요한 페이지입니다.</p>
           <button 
-            onClick={() => window.location.href='/login'} 
+            onClick={() => navigate('/login', { state: { from: '/notifications' } })} 
             className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 px-8 py-3 rounded-xl font-bold shadow-lg transition-all text-white"
           >
             로그인하러 가기
@@ -165,6 +168,7 @@ export default function Notification() {
         onClose={() => setIsSidebarOpen(false)} 
         boards={boards}
       />
+      <Footer />
     </div>
   );
 }

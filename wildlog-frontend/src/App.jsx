@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import ProtectedRoute from './components/common/ProtectedRoute';
 import MyPage from './pages/MyPage/MyPage';
 import ProfileImage from './pages/MyPage/Settings/ProfileImage';
 import NicknameChange from './pages/MyPage/Settings/NicknameChange';
