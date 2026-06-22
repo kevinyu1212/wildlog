@@ -11,6 +11,7 @@ export default function Favorites() {
   const [activeTab, setActiveTab] = useState('posts');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [favPosts, setFavPosts] = useState([]);
+  const [favObservers, setFavObservers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const boards = ['포유류', '파충류', '양서류', '절지류', '곤충', '어류', '식물', '균류', '기타'];
 
@@ -24,9 +25,14 @@ export default function Favorites() {
 
   const fetchFavorites = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/favorites/${user.id}`);
-      const data = await response.json();
-      setFavPosts(data);
+      const [postsRes, obsRes] = await Promise.all([
+        fetch(`http://localhost:5000/api/favorites/${user.id}`),
+        fetch(`http://localhost:5000/api/users/${user.id}/favorites`)
+      ]);
+      const postsData = await postsRes.json();
+      const obsData = await obsRes.json();
+      setFavPosts(postsData);
+      setFavObservers(obsData);
     } catch (err) {
       console.error(err);
     } finally {
@@ -48,6 +54,12 @@ export default function Favorites() {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const getProfileImgUrl = (image) => {
+    if (!image) return null;
+    if (image.startsWith('http')) return image;
+    return `http://localhost:5000/uploads/${image}`;
   };
 
   if (!isLoggedIn) {
@@ -131,6 +143,26 @@ export default function Favorites() {
                 <p className="text-slate-600">즐겨찾기한 게시글이 없습니다.</p>
               </div>
             )}
+          </div>
+        ) : favObservers.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {favObservers.map(fav => (
+              <div key={fav.id} onClick={() => navigate(`/profile/${fav.username}`)}
+                className="bg-slate-900/80 border border-slate-800/60 p-5 rounded-2xl hover:border-yellow-500/30 transition-all cursor-pointer flex items-center gap-4">
+                <div className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center overflow-hidden border border-slate-700">
+                  {getProfileImgUrl(fav.profile_image) ? (
+                    <img src={getProfileImgUrl(fav.profile_image)} alt="profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-xl">👤</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-slate-200 truncate">{fav.username}</p>
+                  <p className="text-[10px] text-slate-500 mt-1">기록 {fav.records} · 탐사종수 {fav.species}</p>
+                </div>
+                <span className="text-xs text-yellow-400 font-bold border border-yellow-500/30 px-3 py-1 rounded-full hover:bg-yellow-500/10 transition-colors">프로필 보기</span>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="py-20 text-center border-2 border-dashed border-slate-800/60 rounded-[3rem]">
