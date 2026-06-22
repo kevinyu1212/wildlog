@@ -3,14 +3,17 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header';
 import Sidebar from '../../components/common/Sidebar';
 import Footer from '../../components/common/Footer';
+import { useAuth } from '../../context/AuthContext';
 
 export default function UserProfile() {
   const { username } = useParams();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
   const boards = ['포유류', '파충류', '양서류', '절지류', '곤충', '어류', '식물', '균류', '기타'];
 
   useEffect(() => {
@@ -28,11 +31,43 @@ export default function UserProfile() {
       const postsRes = await fetch(`http://localhost:5000/api/users/username/${username}/posts`);
       const postsData = await postsRes.json();
       setPosts(postsData);
+
+      if (currentUser?.id) {
+        const favRes = await fetch(`http://localhost:5000/api/users/${currentUser.id}/favorites`);
+        if (favRes.ok) {
+          const favorites = await favRes.json();
+          setIsFavorited(favorites.some(fav => fav.username === username));
+        }
+      }
     } catch (err) {
       console.error(err);
       navigate('/');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const toggleFavorite = async () => {
+    if (!currentUser?.id) {
+      alert('로그인이 필요한 기능입니다.');
+      return;
+    }
+    if (currentUser.username === username) {
+      alert('본인은 즐겨찾기 할 수 없습니다.');
+      return;
+    }
+    try {
+      const res = await fetch(`http://localhost:5000/api/users/favorites/${user.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: currentUser.id })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setIsFavorited(data.favorited);
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -69,9 +104,16 @@ export default function UserProfile() {
             <div className="text-center md:text-left flex-1">
               <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
                 <h1 className="text-3xl md:text-4xl font-bold text-white">{user.username}</h1>
-                <span className="bg-emerald-500/10 text-emerald-400 text-xs font-black px-4 py-1.5 rounded-full border border-emerald-500/20 uppercase tracking-[0.2em] self-center md:self-auto">
-                  Elite Explorer
-                </span>
+                <div className="flex gap-2">
+                  <span className="bg-emerald-500/10 text-emerald-400 text-xs font-black px-4 py-1.5 rounded-full border border-emerald-500/20 uppercase tracking-[0.2em] self-center">
+                    Elite Explorer
+                  </span>
+                  {currentUser?.username !== user.username && (
+                    <button onClick={toggleFavorite} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors self-center flex items-center gap-1 ${isFavorited ? 'bg-pink-500/20 text-pink-400 border-pink-500/50' : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:border-slate-500'}`}>
+                      {isFavorited ? '★ 즐겨찾기 됨' : '☆ 즐겨찾기'}
+                    </button>
+                  )}
+                </div>
               </div>
               <p className="text-slate-500 font-medium mb-8">탐사 시작일: {new Date(user.joined_at).toLocaleDateString()}</p>
               

@@ -12,6 +12,9 @@ import Withdrawal from './pages/MyPage/Settings/Withdrawal';
 import MyPosts from './pages/MyPage/MyPosts';
 import LikedPosts from './pages/MyPage/LikedPosts';
 import MyComments from './pages/MyPage/MyComments';
+import ObserverFavorites from './pages/MyPage/ObserverFavorites';
+import MyPoints from './pages/MyPage/MyPoints';
+import MySpecies from './pages/MyPage/MySpecies';
 import Notification from './pages/Notification/Notification';
 import Favorites from './pages/Favorites/Favorites';
 import Mission from './pages/Mission/Mission';
@@ -41,6 +44,9 @@ export default function App() {
         <Route path="/mypage/my-posts" element={<MyPosts />} />
         <Route path="/mypage/liked-posts" element={<LikedPosts />} />
         <Route path="/mypage/my-comments" element={<MyComments />} />
+        <Route path="/mypage/observer-favorites" element={<ObserverFavorites />} />
+        <Route path="/mypage/points" element={<MyPoints />} />
+        <Route path="/mypage/species" element={<MySpecies />} />
         <Route path="/mypage/profile-image" element={<ProfileImage />} />
         <Route path="/mypage/nickname" element={<NicknameChange />} />
         <Route path="/mypage/password" element={<PasswordChange />} />

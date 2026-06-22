@@ -122,13 +122,15 @@ export default function MyPage() {
           {/* Left Tab Menu */}
           <aside className="w-full md:w-64 space-y-2">
             {[
-              { id: 'info', name: '내 탐사 리포트', icon: '📊' },
-              { id: 'gallery', name: '내 관찰 갤러리', icon: '📸' },
-              { id: 'settings', name: '계정 및 보안', icon: '🛡️' },
+              { id: 'info', name: '내 탐사 리포트', icon: '📊', path: null },
+              { id: 'points', name: '내 포인트', icon: '💎', path: '/mypage/points' },
+              { id: 'favorites', name: '즐겨찾기한 관찰자', icon: '⭐', path: '/mypage/observer-favorites' },
+              { id: 'gallery', name: '내 관찰 갤러리', icon: '📸', path: null },
+              { id: 'settings', name: '계정 및 보안', icon: '🛡️', path: null },
             ].map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => tab.path ? navigate(tab.path) : setActiveTab(tab.id)}
                 className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-bold transition-all ${
                   activeTab === tab.id 
                     ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-lg shadow-emerald-900/40' 

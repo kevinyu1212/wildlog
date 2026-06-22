@@ -256,11 +256,16 @@ async function setupDatabase() {
     FOREIGN KEY(post_id) REFERENCES posts(id)
   )`);
 
-  // 초기 미션 데이터 (없을 경우)
-  const [rows] = await db.query("SELECT COUNT(*) as count FROM missions");
-  if (rows[0].count === 0) {
-    // 더미 데이터 자동 삽입 제거: 사용자 필요시 직접 추가
-  }
+  // 8. 관찰자 즐겨찾기 테이블
+  await db.query(`CREATE TABLE IF NOT EXISTS observer_favorites (
+    user_id INT,
+    target_user_id INT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, target_user_id),
+    FOREIGN KEY(user_id) REFERENCES users(id),
+    FOREIGN KEY(target_user_id) REFERENCES users(id)
+  )`);
+
 }
 
 // --- 포인트 적립 헬퍼 함수 ---
@@ -575,13 +580,26 @@ app.post('/api/posts', upload.array('images', 5), async (req, res) => {
     if (mission_id) {
       await db.query('UPDATE missions SET current_count = current_count + 1 WHERE id = ?', [mission_id]);
       
+      // 미션 참여 보너스 20 포인트
+      await addPoints(user_id, 20, 'mission_participate', `미션 기록 등록 보너스`, mission_id);
+      
       // 미션 성공 여부 확인
       const [[mission]] = await db.query("SELECT * FROM missions WHERE id = ?", [mission_id]);
-      if (mission && mission.current_count >= mission.target_count) {
-        // 미션 성공 알림 (참여한 모든 유저에게 보내는 것은 데이터베이스 부하가 클 수 있으므로, 일단 현재 유저에게만 보냄)
-        // 실제 운영 시에는 참여자 테이블을 따로 두어 모두에게 알림을 보낼 수 있음
+      // 딱 목표치에 도달했을 때 1회만 지급
+      if (mission && mission.current_count === mission.target_count) {
         await db.query("INSERT INTO notifications (user_id, sender_id, post_id, type, content) VALUES (?, ?, ?, ?, ?)",
           [user_id, null, null, 'mission', `🎉 미션 성공! "${mission.title}" 미션이 목표치를 달성했습니다!`]);
+          
+        // 참여한 모든 유저에게 50포인트 지급
+        const [participants] = await db.query("SELECT DISTINCT user_id FROM posts WHERE mission_id = ?", [mission_id]);
+        for (const p of participants) {
+          await addPoints(p.user_id, 50, 'mission_complete', `미션 "${mission.title}" 달성 보너스`, mission_id);
+          // 다른 참여자에게도 알림 전송 (본인 제외)
+          if (p.user_id !== user_id) {
+            await db.query("INSERT INTO notifications (user_id, sender_id, post_id, type, content) VALUES (?, ?, ?, ?, ?)",
+              [p.user_id, null, null, 'mission', `🎉 미션 성공! 참여하신 "${mission.title}" 미션이 목표치를 달성했습니다!`]);
+          }
+        }
       }
     }
     res.json({ id: result.insertId, message: '기록 완료' });
@@ -890,6 +908,59 @@ app.get('/api/users/:id/points', async (req, res) => {
       [req.params.id]
     );
     res.json({ points: points || 0, total_earned: total_earned || 0 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- 관찰자 즐겨찾기 API ---
+app.post('/api/users/favorites/:targetId', async (req, res) => {
+  const { user_id } = req.body;
+  const target_id = req.params.targetId;
+  if (!user_id || user_id == target_id) return res.status(400).json({ error: '잘못된 요청입니다.' });
+  
+  try {
+    const [rows] = await db.query("SELECT * FROM observer_favorites WHERE user_id = ? AND target_user_id = ?", [user_id, target_id]);
+    if (rows.length > 0) {
+      await db.query("DELETE FROM observer_favorites WHERE user_id = ? AND target_user_id = ?", [user_id, target_id]);
+      res.json({ favorited: false });
+    } else {
+      await db.query("INSERT INTO observer_favorites (user_id, target_user_id) VALUES (?, ?)", [user_id, target_id]);
+      res.json({ favorited: true });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/users/:id/favorites', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT u.id, u.username, u.profile_image, u.records, u.species
+      FROM observer_favorites f
+      JOIN users u ON f.target_user_id = u.id
+      WHERE f.user_id = ?
+      ORDER BY f.created_at DESC
+    `, [req.params.id]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- 탐사 종수(고유 제목) API ---
+app.get('/api/users/:id/species', async (req, res) => {
+  try {
+    // 고유 제목 기준 탐사 종수 (게시판 이름 포함)
+    const [rows] = await db.query(`
+      SELECT MIN(p.id) as post_id, p.title as species_name, b.name as category, MIN(p.created_at) as first_seen, COUNT(p.id) as count
+      FROM posts p
+      LEFT JOIN boards b ON p.board_id = b.id
+      WHERE p.user_id = ? AND p.title IS NOT NULL AND p.title != ''
+      GROUP BY p.title, b.name
+      ORDER BY first_seen DESC
+    `, [req.params.id]);
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

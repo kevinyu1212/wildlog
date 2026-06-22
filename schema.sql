@@ -17,7 +17,20 @@ CREATE TABLE IF NOT EXISTS users (
     species INT DEFAULT 0,
     comments INT DEFAULT 0,
     likes INT DEFAULT 0,
-    profile_image TEXT
+    profile_image TEXT,
+    points INT DEFAULT 0
+);
+
+-- 1-1. 포인트 내역 테이블
+CREATE TABLE IF NOT EXISTS point_history (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    points INT NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    description VARCHAR(255),
+    reference_id INT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id)
 );
 
 -- 2. 게시판 테이블
@@ -109,7 +122,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     FOREIGN KEY(user_id) REFERENCES users(id)
 );
 
--- 8. 즐겨찾기 테이블
+-- 8. 즐겨찾기 테이블 (게시글)
 CREATE TABLE IF NOT EXISTS favorites (
     user_id INT,
     post_id INT,
@@ -117,6 +130,16 @@ CREATE TABLE IF NOT EXISTS favorites (
     PRIMARY KEY (user_id, post_id),
     FOREIGN KEY(user_id) REFERENCES users(id),
     FOREIGN KEY(post_id) REFERENCES posts(id)
+);
+
+-- 9. 관찰자 즐겨찾기 테이블
+CREATE TABLE IF NOT EXISTS observer_favorites (
+    user_id INT,
+    target_user_id INT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, target_user_id),
+    FOREIGN KEY(user_id) REFERENCES users(id),
+    FOREIGN KEY(target_user_id) REFERENCES users(id)
 );
 
 -- 초기 미션 데이터

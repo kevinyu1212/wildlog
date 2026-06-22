@@ -49,7 +49,7 @@ export default function MyInfo({ user, onTabChange }) {
     },
     { 
       label: '탐사 종수', value: user?.species || 0, color: 'text-blue-400', icon: '🧬',
-      onClick: null
+      onClick: () => navigate('/mypage/species')
     },
   ];
 
