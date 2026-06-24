@@ -146,7 +146,7 @@ export default function MissionArchive() {
               </div>
               <div>
                 <span className="text-[10px] text-slate-600 font-bold uppercase tracking-tighter block">아카이브</span>
-                <span className="text-sm font-bold text-slate-300">{posts.length}개의 기록</span>
+                <span className="text-sm font-bold text-slate-300">{mission.post_count || posts.length}개의 기록</span>
               </div>
             </div>
           </div>

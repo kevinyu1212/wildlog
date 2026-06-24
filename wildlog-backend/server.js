@@ -830,18 +830,18 @@ app.get('/api/missions/:id/posts', async (req, res) => {
 // --- 6. 미션 (Mission) ---
 app.get('/api/missions', async (req, res) => {
   try {
+    // 진행 중인 미션 + 완료된 미션 모두 표시 (기존 미션도 아카이브 가능하도록)
     const [rows] = await db.query(`
       SELECT m.*,
         (SELECT COUNT(*) FROM posts p WHERE p.mission_id = m.id) as post_count,
         (SELECT COUNT(DISTINCT p.user_id) FROM posts p WHERE p.mission_id = m.id) as participant_count,
         CASE
-          WHEN m.target_count > 0 THEN LEAST(100, ROUND((m.current_count / m.target_count) * 100))
+          WHEN m.target_count > 0 THEN LEAST(100, ROUND(((SELECT COUNT(*) FROM posts p WHERE p.mission_id = m.id) / m.target_count) * 100))
           ELSE 0
         END as progress
       FROM missions m
-      WHERE m.end_date IS NULL OR m.end_date > NOW()
       ORDER BY
-        CASE WHEN m.target_count > 0 AND m.current_count >= m.target_count THEN 1 ELSE 0 END ASC,
+        CASE WHEN m.target_count > 0 AND (SELECT COUNT(*) FROM posts p WHERE p.mission_id = m.id) >= m.target_count THEN 1 ELSE 0 END ASC,
         m.end_date IS NULL ASC,
         m.end_date ASC,
         m.created_at DESC
@@ -859,7 +859,7 @@ app.get('/api/missions/:id', async (req, res) => {
         (SELECT COUNT(*) FROM posts p WHERE p.mission_id = m.id) as post_count,
         (SELECT COUNT(DISTINCT p.user_id) FROM posts p WHERE p.mission_id = m.id) as participant_count,
         CASE
-          WHEN m.target_count > 0 THEN LEAST(100, ROUND((m.current_count / m.target_count) * 100))
+          WHEN m.target_count > 0 THEN LEAST(100, ROUND(((SELECT COUNT(*) FROM posts p WHERE p.mission_id = m.id) / m.target_count) * 100))
           ELSE 0
         END as progress
       FROM missions m
