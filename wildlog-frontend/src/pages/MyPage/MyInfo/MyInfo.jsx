@@ -4,9 +4,11 @@ import { useAuth } from '../../../context/AuthContext';
 
 export default function MyInfo({ user, onTabChange }) {
   const navigate = useNavigate();
+  const { updateUser } = useAuth();
   const [myPosts, setMyPosts] = useState([]);
   const [likedPosts, setLikedPosts] = useState([]);
   const [myComments, setMyComments] = useState([]);
+  const [freshUser, setFreshUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,6 +18,14 @@ export default function MyInfo({ user, onTabChange }) {
         return;
       }
       try {
+        // 서버에서 최신 유저 정보를 먼저 가져옴 (species, records, points 등 실시간 반영)
+        const userRes = await fetch(`http://localhost:5000/api/users/${user.id}`);
+        if (userRes.ok) {
+          const freshUserData = await userRes.json();
+          setFreshUser(freshUserData);
+          updateUser(freshUserData); // AuthContext 업데이트
+        }
+
         const [postsRes, likesRes, commentsRes] = await Promise.all([
           fetch(`http://localhost:5000/api/users/${user.id}/posts?sort=latest`),
           fetch(`http://localhost:5000/api/users/${user.id}/liked-posts`),
@@ -34,6 +44,8 @@ export default function MyInfo({ user, onTabChange }) {
     getMyInfoData();
   }, [user?.id]);
 
+  const displayUser = freshUser || user;
+
   const stats = [
     { 
       label: '게시글', value: myPosts.length, color: 'text-emerald-400', icon: '📝',
@@ -48,15 +60,16 @@ export default function MyInfo({ user, onTabChange }) {
       onClick: () => navigate('/mypage/my-comments')
     },
     { 
-      label: '탐사 종수', value: user?.species || 0, color: 'text-blue-400', icon: '🧬',
+      label: '탐사 종수', value: displayUser?.species || 0, color: 'text-blue-400', icon: '🧬',
       onClick: () => navigate('/mypage/species')
     },
   ];
 
   const getProfileImgUrl = () => {
-    if (!user?.profile_image) return null;
-    if (user.profile_image.startsWith('http')) return user.profile_image;
-    return `http://localhost:5000/uploads/${user.profile_image}?t=${new Date().getTime()}`;
+    const target = displayUser || user;
+    if (!target?.profile_image) return null;
+    if (target.profile_image.startsWith('http')) return target.profile_image;
+    return `http://localhost:5000/uploads/${target.profile_image}?t=${new Date().getTime()}`;
   };
 
   return (
@@ -80,16 +93,16 @@ export default function MyInfo({ user, onTabChange }) {
           </div>
         </div>
         <div className="text-center md:text-left space-y-3">
-          <h2 className="text-3xl md:text-4xl font-black text-white">{user?.username || '탐사대원'}</h2>
-          <p className="text-sm text-slate-500 font-medium">가입 ID: {user?.email}</p>
+          <h2 className="text-3xl md:text-4xl font-black text-white">{displayUser?.username || '탐사대원'}</h2>
+          <p className="text-sm text-slate-500 font-medium">가입 ID: {displayUser?.email}</p>
           <div className="flex flex-wrap gap-3 justify-center md:justify-start">
             <span className="bg-emerald-500/10 text-emerald-400 px-4 py-1.5 rounded-full text-xs font-bold border border-emerald-500/20">Elite Observer</span>
             <span className="bg-slate-800/80 text-slate-400 px-4 py-1.5 rounded-full text-xs font-medium border border-slate-700">
-              가입일: {user?.joined_at ? new Date(user.joined_at).toLocaleDateString() : '-'}
+              가입일: {displayUser?.joined_at ? new Date(displayUser.joined_at).toLocaleDateString() : '-'}
             </span>
-            {user?.birthday && (
+            {displayUser?.birthday && (
               <span className="bg-slate-800/80 text-slate-400 px-4 py-1.5 rounded-full text-xs font-medium border border-slate-700">
-                생년월일: {new Date(user.birthday).toLocaleDateString()}
+                생년월일: {new Date(displayUser.birthday).toLocaleDateString()}
               </span>
             )}
           </div>
