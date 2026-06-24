@@ -809,20 +809,25 @@ app.get('/api/map/posts', async (req, res) => {
   }
 });
 
-// --- API: 특정 미션에 연결된 게시글 조회 (아카이브) ---
+// --- API: 특정 미션에 연결된 게시글 조회 (아카이브) - 반드시 /:id/posts 패턴 유지 ---
 app.get('/api/missions/:id/posts', async (req, res) => {
+  const missionId = req.params.id;
+  console.log(`📦 아카이브 게시글 조회: mission_id=${missionId}`);
   try {
     const [rows] = await db.query(`
-      SELECT p.*, u.username as author, u.profile_image as author_img, b.name as category,
+      SELECT p.id, p.title, p.content, p.images, p.lat, p.lng, p.likes_count, p.created_at,
+        u.username as author, u.profile_image as author_img, b.name as category,
         (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comment_count
       FROM posts p
       JOIN users u ON p.user_id = u.id
       LEFT JOIN boards b ON p.board_id = b.id
       WHERE p.mission_id = ?
       ORDER BY p.created_at DESC
-    `, [req.params.id]);
+    `, [missionId]);
+    console.log(`📦 아카이브 조회 결과: ${rows.length}개 게시글 발견`);
     res.json(rows);
   } catch (err) {
+    console.error('📦 아카이브 조회 에러:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -830,7 +835,6 @@ app.get('/api/missions/:id/posts', async (req, res) => {
 // --- 6. 미션 (Mission) ---
 app.get('/api/missions', async (req, res) => {
   try {
-    // 진행 중인 미션 + 완료된 미션 모두 표시 (기존 미션도 아카이브 가능하도록)
     const [rows] = await db.query(`
       SELECT m.*,
         (SELECT COUNT(*) FROM posts p WHERE p.mission_id = m.id) as post_count,
@@ -853,6 +857,8 @@ app.get('/api/missions', async (req, res) => {
 });
 
 app.get('/api/missions/:id', async (req, res) => {
+  const missionId = req.params.id;
+  console.log(`🎯 미션 단일 조회: mission_id=${missionId}`);
   try {
     const [[mission]] = await db.query(`
       SELECT m.*,
@@ -864,7 +870,7 @@ app.get('/api/missions/:id', async (req, res) => {
         END as progress
       FROM missions m
       WHERE m.id = ?
-    `, [req.params.id]);
+    `, [missionId]);
 
     if (!mission) return res.status(404).json({ error: '미션을 찾을 수 없습니다.' });
     res.json(mission);
