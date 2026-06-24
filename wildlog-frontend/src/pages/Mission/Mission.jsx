@@ -31,7 +31,8 @@ export default function Mission() {
   const getProgress = (mission) => {
     const target = Number(mission.target_count) || 0;
     if (target <= 0) return 0;
-    return Math.min(100, Math.round((Number(mission.current_count) / target) * 100));
+    const count = Number(mission.post_count) || 0;
+    return Math.min(100, Math.round((count / target) * 100));
   };
 
   const getMissionTags = (mission) => (
@@ -131,7 +132,7 @@ export default function Mission() {
                     <div className="space-y-3 mb-6">
                       <div className="flex justify-between text-xs font-bold text-slate-400">
                         <span>참여 현황 {progress}%</span>
-                        <span className="text-emerald-400">{mission.current_count}건 / {mission.target_count}건</span>
+                        <span className="text-emerald-400">{mission.post_count || 0}건 / {mission.target_count}건</span>
                       </div>
                       <div className="w-full bg-slate-800/50 h-3 rounded-full overflow-hidden border border-slate-700/30">
                         <div

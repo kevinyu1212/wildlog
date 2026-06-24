@@ -36,7 +36,8 @@ export default function MissionArchive() {
   const getProgress = (m) => {
     const target = Number(m?.target_count) || 0;
     if (target <= 0) return 0;
-    return Math.min(100, Math.round((Number(m?.current_count) / target) * 100));
+    const count = Number(m?.post_count) || 0;
+    return Math.min(100, Math.round((count / target) * 100));
   };
 
   if (isLoading) {
@@ -118,7 +119,7 @@ export default function MissionArchive() {
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-sm font-bold text-slate-400">
                 <span>미션 진행률 {progress}%</span>
-                <span className="text-emerald-400">{mission.current_count}건 / {mission.target_count}건</span>
+                <span className="text-emerald-400">{mission.post_count || 0}건 / {mission.target_count}건</span>
               </div>
               <div className="w-full bg-slate-800/50 h-4 rounded-full overflow-hidden border border-slate-700/30">
                 <div
