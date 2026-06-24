@@ -300,10 +300,21 @@ export default function PostDetail() {
 
             {/* Content Section */}
             <div className="bg-slate-900/50 p-6 md:p-10 rounded-2xl md:rounded-[2.5rem] border border-slate-800/60 space-y-6 md:space-y-8 backdrop-blur-sm">
-              <div className="flex flex-wrap justify-between items-center gap-4">
-                <span className="bg-emerald-500/10 text-emerald-400 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border border-emerald-500/20">
-                  {post.category}
-                </span>
+          <div className="flex flex-wrap justify-between items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="bg-emerald-500/10 text-emerald-400 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border border-emerald-500/20">
+                    {post.category}
+                  </span>
+                  {post.lat && post.lng && (
+                    <button
+                      onClick={() => navigate('/map')}
+                      className="bg-emerald-500/10 text-emerald-400 px-3 py-1.5 rounded-full text-[10px] font-bold border border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1"
+                      title="지도에서 보기"
+                    >
+                      🗺️ 지도
+                    </button>
+                  )}
+                </div>
                 <div className="flex gap-3">
                   {user?.id === post.user_id && (
                     <div className="flex gap-2 mr-2 border-r border-slate-800/60 pr-3">
@@ -352,11 +363,21 @@ export default function PostDetail() {
               </div>
 
               {/* Map Location */}
-              <div className="pt-6 border-t border-slate-800/60">
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                  탐사 지점 위치 정보
-                </h3>
+                <div className="pt-6 border-t border-slate-800/60">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                    탐사 지점 위치 정보
+                  </h3>
+                  {post.lat && post.lng && (
+                    <button
+                      onClick={() => navigate('/map')}
+                      className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+                    >
+                      전체 지도에서 보기 →
+                    </button>
+                  )}
+                </div>
                 <div className="w-full h-64 md:h-80 bg-slate-950 rounded-xl md:rounded-[2rem] overflow-hidden border border-slate-800/60 relative" style={{ zIndex: 0 }}>
                   {post.lat && post.lng ? (
                     <MapContainer center={[post.lat, post.lng]} zoom={13} style={{ width: '100%', height: '100%' }}>
@@ -367,6 +388,9 @@ export default function PostDetail() {
                     <div className="w-full h-full flex flex-col items-center justify-center text-slate-700">
                       <span className="text-4xl mb-3">📍</span>
                       <p className="text-xs font-bold uppercase tracking-widest">위치 정보가 등록되지 않았습니다.</p>
+                      <button onClick={() => navigate('/map')} className="mt-4 text-[10px] font-bold text-emerald-400 hover:underline">
+                        🗺️ 생물 지도에서 다른 탐사 위치 보기
+                      </button>
                     </div>
                   )}
                 </div>

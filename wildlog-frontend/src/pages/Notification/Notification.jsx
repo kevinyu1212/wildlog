@@ -59,6 +59,21 @@ export default function Notification() {
     }
   };
 
+  const handleNotificationClick = (n) => {
+    // 좋아요, 댓글, 대댓글 알림 → 해당 게시글로 이동
+    if ((n.type === 'like' || n.type === 'comment' || n.type === 'reply') && n.post_id) {
+      navigate(`/post/${n.post_id}`);
+    }
+    // 포인트 알림 → 포인트 내역 페이지로 이동
+    else if (n.type === 'point') {
+      navigate('/mypage/points');
+    }
+    // 미션 알림 → 미션 페이지로 이동
+    else if (n.type === 'mission') {
+      navigate('/missions');
+    }
+  };
+
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-slate-100 flex flex-col items-center justify-center p-6">
@@ -119,10 +134,11 @@ export default function Notification() {
               return (
                 <div 
                   key={n.id}
+                  onClick={() => handleNotificationClick(n)}
                   className={`group relative flex items-center gap-4 p-4 md:p-5 rounded-2xl border transition-all cursor-pointer ${
                     n.is_read 
-                      ? 'bg-slate-900/30 border-slate-800/40' 
-                      : 'bg-slate-900 border-emerald-500/20 shadow-lg shadow-emerald-900/5'
+                      ? 'bg-slate-900/30 border-slate-800/40 hover:bg-slate-800/40' 
+                      : 'bg-slate-900 border-emerald-500/20 shadow-lg shadow-emerald-900/5 hover:bg-slate-800/60'
                   }`}
                 >
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0 ${style.bg} ${style.text}`}>
@@ -158,7 +174,17 @@ export default function Notification() {
             <div className="py-20 text-center bg-slate-900/30 rounded-3xl border border-dashed border-slate-800/60">
               <div className="text-5xl mb-6">🔔</div>
               <p className="text-slate-600 text-sm font-medium">새로운 알림이 없습니다.</p>
-              <p className="text-[10px] text-slate-700 mt-2">댓글, 좋아요, 미션 알림을 확인하세요.</p>
+              <div className="mt-4 flex flex-wrap gap-3 justify-center">
+                <button onClick={() => navigate('/mypage')} className="text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-500/20">
+                  📊 마이페이지
+                </button>
+                <button onClick={() => navigate('/board/전체')} className="text-xs font-bold text-slate-400 hover:text-slate-200 transition-colors bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-700/50">
+                  📸 게시판 둘러보기
+                </button>
+                <button onClick={() => navigate('/mypage/points')} className="text-xs font-bold text-yellow-400 hover:text-yellow-300 transition-colors bg-yellow-500/10 px-4 py-2 rounded-xl border border-yellow-500/20">
+                  💎 포인트 내역
+                </button>
+              </div>
             </div>
           )}
         </div>
