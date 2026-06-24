@@ -1,13 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import useSearchHistory from '../../hooks/useSearchHistory';
 
 export default function Header({ onToggleSidebar }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { isLoggedIn, user, logout, updateUser } = useAuth();
   const [notificationCount, setNotificationCount] = useState(0);
+  const { saveSearchTerm, getSavedSearches, clearSavedSearches } = useSearchHistory();
   const [search, setSearch] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
+  const searchRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   useEffect(() => {
     if (isLoggedIn && user?.id) {
@@ -44,9 +49,32 @@ export default function Header({ onToggleSidebar }) {
   const handleSearch = (e) => {
     e.preventDefault();
     if (!search.trim()) return;
-    navigate(`/board/전체?search=${encodeURIComponent(search)}`);
+    saveSearchTerm('header', search.trim());
+    navigate(`/board/전체?search=${encodeURIComponent(search.trim())}`);
     setSearch('');
+    setShowHistory(false);
   };
+
+  const handleHistoryClick = (term) => {
+    setSearch(term);
+    saveSearchTerm('header', term);
+    navigate(`/board/전체?search=${encodeURIComponent(term)}`);
+    setSearch('');
+    setShowHistory(false);
+  };
+
+  // Close history dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setShowHistory(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const savedSearches = getSavedSearches('header');
 
   const getProfileImgUrl = () => {
     if (!user?.profile_image) return null;
@@ -70,18 +98,59 @@ export default function Header({ onToggleSidebar }) {
       </div>
 
       {/* Search Bar */}
-      <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8 relative group desktop-only">
-        <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-emerald-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-        </svg>
-        <input 
-          type="text" 
-          placeholder="통합 검색..." 
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-slate-950/50 border border-slate-800/60 py-2.5 pl-11 pr-4 rounded-2xl text-sm focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/10 outline-none transition-all placeholder:text-slate-600"
-        />
-      </form>
+      <div ref={searchRef} className="hidden md:flex flex-1 max-w-md mx-8 relative">
+        <form onSubmit={handleSearch} className="relative w-full group">
+          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-emerald-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+          <input 
+            ref={searchInputRef}
+            type="text" 
+            placeholder="통합 검색..." 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onFocus={() => setShowHistory(true)}
+            className="w-full bg-slate-950/50 border border-slate-800/60 py-2.5 pl-11 pr-4 rounded-2xl text-sm focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/10 outline-none transition-all placeholder:text-slate-600"
+          />
+        </form>
+        
+        {/* Search History Dropdown */}
+        {showHistory && savedSearches.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-1.5 bg-slate-900 border border-slate-800/80 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden z-50">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-800/60">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">최근 검색</span>
+              <button 
+                onClick={() => { clearSavedSearches('header'); setShowHistory(false); }}
+                className="text-[10px] text-slate-600 hover:text-red-400 transition-colors"
+              >
+                전체 삭제
+              </button>
+            </div>
+            <div className="max-h-48 overflow-y-auto">
+              {savedSearches.map((term, idx) => (
+                <div 
+                  key={idx}
+                  onClick={() => handleHistoryClick(term)}
+                  className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-800/60 cursor-pointer transition-colors group/item"
+                >
+                  <svg className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-sm text-slate-300 flex-1 truncate">{term}</span>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); }}
+                    className="opacity-0 group-hover/item:opacity-100 text-slate-600 hover:text-slate-400 transition-all"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Right Section */}
       <div className="flex items-center gap-3 md:gap-5">

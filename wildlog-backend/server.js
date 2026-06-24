@@ -277,6 +277,14 @@ async function addPoints(userId, points, type, description, referenceId = null) 
       [userId, points, type, description, referenceId]
     );
     await db.query("UPDATE users SET points = points + ? WHERE id = ?", [points, userId]);
+    
+    // 포인트 획득 알림 생성 (음수 포인트는 알림 생성 안함)
+    if (points > 0) {
+      await db.query(
+        "INSERT INTO notifications (user_id, sender_id, post_id, type, content) VALUES (?, ?, ?, ?, ?)",
+        [userId, null, referenceId, 'point', `🎉 포인트 ${points}P를 획득했습니다! (${description})`]
+      );
+    }
   } catch (err) {
     console.error('Failed to add points:', err);
   }
@@ -576,6 +584,14 @@ app.post('/api/posts', upload.array('images', 5), async (req, res) => {
       [user_id, board_id, title, content, category, imageUrls, lat || null, lng || null, mission_id || null]);
     await db.query("UPDATE users SET records = records + 1 WHERE id = ?", [user_id]);
     await addPoints(user_id, 10, 'post', '새 탐사 기록을 등록했습니다.', result.insertId);
+
+    // 탐사 종수 자동 업데이트
+    await db.query(`
+      UPDATE users SET species = (
+        SELECT COUNT(DISTINCT p.title) FROM posts p 
+        WHERE p.user_id = ? AND p.title IS NOT NULL AND p.title != ''
+      ) WHERE id = ?
+    `, [user_id, user_id]);
     
     if (mission_id) {
       await db.query('UPDATE missions SET current_count = current_count + 1 WHERE id = ?', [mission_id]);

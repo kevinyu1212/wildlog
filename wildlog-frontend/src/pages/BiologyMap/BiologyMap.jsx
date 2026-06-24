@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header';
 import Sidebar from '../../components/common/Sidebar';
 import useBoards from '../../hooks/useBoards';
+import useSearchHistory from '../../hooks/useSearchHistory';
 
 // Fix default marker icon
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -159,6 +160,10 @@ export default function BiologyMap() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('전체');
   const [markers, setMarkers] = useState([]);
+  const [search, setSearch] = useState('');
+  const [showSearchHistory, setShowSearchHistory] = useState(false);
+  const { saveSearchTerm, getSavedSearches, clearSavedSearches } = useSearchHistory();
+  const searchRef = useRef(null);
   const { boards } = useBoards();
 
   const categories = [
@@ -188,9 +193,44 @@ export default function BiologyMap() {
     fetchMarkers();
   }, []);
 
-  const filteredMarkers = selectedCategory === '전체'
+  // Close search history dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setShowSearchHistory(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Filter by category
+  const categoryFiltered = selectedCategory === '전체'
     ? markers
     : markers.filter(m => m.category === selectedCategory);
+
+  // Filter by search term (title or category)
+  const filteredMarkers = search.trim()
+    ? categoryFiltered.filter(m => 
+        (m.title && m.title.toLowerCase().includes(search.toLowerCase())) ||
+        (m.category && m.category.toLowerCase().includes(search.toLowerCase()))
+      )
+    : categoryFiltered;
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (!search.trim()) return;
+    saveSearchTerm('biologymap', search.trim());
+    setShowSearchHistory(false);
+  };
+
+  const handleHistoryClick = (term) => {
+    setSearch(term);
+    saveSearchTerm('biologymap', term);
+    setShowSearchHistory(false);
+  };
+
+  const savedSearches = getSavedSearches('biologymap');
 
   return (
     <div className="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col font-sans overflow-hidden">
@@ -257,6 +297,52 @@ export default function BiologyMap() {
           <div className="flex items-center gap-2 pl-3 md:pl-4 border-l border-slate-800/60">
             <span className="text-[10px] md:text-xs text-slate-500">{selectedCategory}</span>
           </div>
+        </div>
+
+        {/* Search Bar - Floating */}
+        <div ref={searchRef} className="absolute top-4 md:top-6 right-2 md:right-6 z-[1000]">
+          <form onSubmit={handleSearchSubmit} className="relative">
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+            <input 
+              type="text" 
+              placeholder="마커 검색..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onFocus={() => setShowSearchHistory(true)}
+              className="w-48 md:w-56 bg-slate-900/90 backdrop-blur-xl border border-slate-800/80 p-3 pl-10 rounded-2xl text-sm focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 outline-none transition-all placeholder:text-slate-600 shadow-2xl"
+            />
+            
+            {/* Search History Dropdown */}
+            {showSearchHistory && savedSearches.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1.5 bg-slate-900 border border-slate-800/80 rounded-xl shadow-2xl shadow-black/40 overflow-hidden z-50">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800/60">
+                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">최근 검색</span>
+                  <button 
+                    onClick={() => { clearSavedSearches('biologymap'); setShowSearchHistory(false); }}
+                    className="text-[9px] text-slate-600 hover:text-red-400 transition-colors"
+                  >
+                    전체 삭제
+                  </button>
+                </div>
+                <div className="max-h-40 overflow-y-auto">
+                  {savedSearches.map((term, idx) => (
+                    <div 
+                      key={idx}
+                      onClick={() => handleHistoryClick(term)}
+                      className="flex items-center gap-2 px-3 py-2 hover:bg-slate-800/60 cursor-pointer transition-colors"
+                    >
+                      <svg className="w-3 h-3 text-slate-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-xs text-slate-300 flex-1 truncate">{term}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </form>
         </div>
       </div>
 

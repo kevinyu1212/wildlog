@@ -82,6 +82,7 @@ export default function Notification() {
       case 'reply': return { icon: '↪️', bg: 'bg-indigo-500/20', text: 'text-indigo-400' };
       case 'like': return { icon: '❤️', bg: 'bg-pink-500/20', text: 'text-pink-400' };
       case 'mission': return { icon: '🎯', bg: 'bg-orange-500/20', text: 'text-orange-400' };
+      case 'point': return { icon: '⭐', bg: 'bg-yellow-500/20', text: 'text-yellow-400' };
       default: return { icon: '🔔', bg: 'bg-slate-500/20', text: 'text-slate-400' };
     }
   };
