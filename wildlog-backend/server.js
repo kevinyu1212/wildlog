@@ -943,7 +943,7 @@ app.delete('/api/missions/:id', async (req, res) => {
     // 관련 게시글의 mission_id를 NULL로 설정
     await db.query('UPDATE posts SET mission_id = NULL WHERE mission_id = ?', [missionId]);
     // 관련 포인트 내역 정리
-    await db.query('DELETE FROM point_history WHERE related_id = ? AND (action_type = ? OR action_type = ?)', [missionId, 'mission_participate', 'mission_complete']);
+    await db.query('DELETE FROM point_history WHERE reference_id = ? AND (type = ? OR type = ?)', [missionId, 'mission_participate', 'mission_complete']);
     // 미션 삭제
     await db.query('DELETE FROM missions WHERE id = ?', [missionId]);
 
