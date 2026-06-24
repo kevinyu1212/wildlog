@@ -927,6 +927,32 @@ app.post('/api/missions', async (req, res) => {
   }
 });
 
+// 미션 삭제
+app.delete('/api/missions/:id', async (req, res) => {
+  const missionId = req.params.id;
+  const { user_id } = req.body;
+
+  try {
+    const [[mission]] = await db.query('SELECT * FROM missions WHERE id = ?', [missionId]);
+    if (!mission) return res.status(404).json({ error: '미션을 찾을 수 없습니다.' });
+
+    if (mission.created_by && Number(mission.created_by) !== Number(user_id)) {
+      return res.status(403).json({ error: '미션 생성자만 삭제할 수 있습니다.' });
+    }
+
+    // 관련 게시글의 mission_id를 NULL로 설정
+    await db.query('UPDATE posts SET mission_id = NULL WHERE mission_id = ?', [missionId]);
+    // 관련 포인트 내역 정리
+    await db.query('DELETE FROM point_history WHERE related_id = ? AND (action_type = ? OR action_type = ?)', [missionId, 'mission_participate', 'mission_complete']);
+    // 미션 삭제
+    await db.query('DELETE FROM missions WHERE id = ?', [missionId]);
+
+    res.json({ message: '미션이 삭제되었습니다.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- Point History API ---
 app.get('/api/users/:id/points/history', async (req, res) => {
   try {

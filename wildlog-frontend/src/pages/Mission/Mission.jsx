@@ -4,10 +4,12 @@ import Header from '../../components/common/Header';
 import Sidebar from '../../components/common/Sidebar';
 import Footer from '../../components/common/Footer';
 import useBoards from '../../hooks/useBoards';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Mission() {
   const navigate = useNavigate();
   const { boards } = useBoards();
+  const { user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [missions, setMissions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,6 +50,27 @@ export default function Mission() {
     params.set('mission_id', mission.id);
     if (mission.category) params.set('category', mission.category);
     navigate(`/write?${params.toString()}`);
+  };
+
+  const deleteMission = async (e, mission) => {
+    e.stopPropagation();
+    if (!window.confirm(`"${mission.title}" 미션을 삭제하시겠습니까?\n관련 게시글은 유지되지만 미션 연결이 해제됩니다.`)) return;
+    try {
+      const res = await fetch(`http://localhost:5000/api/missions/${mission.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user?.id })
+      });
+      if (res.ok) {
+        setMissions(prev => prev.filter(m => m.id !== mission.id));
+      } else {
+        const data = await res.json();
+        alert(data.error || '삭제에 실패했습니다.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('삭제 중 오류가 발생했습니다.');
+    }
   };
 
   return (
@@ -180,6 +203,18 @@ export default function Mission() {
                         </svg>
                         아카이브
                       </button>
+                      {user && Number(user.id) === Number(mission.created_by) && (
+                        <button
+                          type="button"
+                          onClick={(e) => deleteMission(e, mission)}
+                          className="px-4 py-4 rounded-2xl text-sm font-bold transition-all border border-red-900/30 text-red-400/60 hover:bg-red-900/20 hover:border-red-500/40 hover:text-red-400 flex items-center gap-1.5"
+                          title="미션 삭제"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
