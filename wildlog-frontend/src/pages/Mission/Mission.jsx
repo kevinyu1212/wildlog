@@ -160,14 +160,26 @@ export default function Mission() {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => startMission(mission)}
-                      disabled={isComplete}
-                      className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed py-4 rounded-2xl text-sm font-bold transition-all shadow-lg shadow-emerald-900/20 active:scale-[0.99] text-white"
-                    >
-                      {isComplete ? '목표 달성 완료' : '이 미션에 참여하기'}
-                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => startMission(mission)}
+                        disabled={isComplete}
+                        className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed py-4 rounded-2xl text-sm font-bold transition-all shadow-lg shadow-emerald-900/20 active:scale-[0.99] text-white"
+                      >
+                        {isComplete ? '목표 달성 완료' : '참여하기'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/missions/${mission.id}/archive`)}
+                        className="px-5 py-4 rounded-2xl text-sm font-bold transition-all border border-slate-700/50 text-slate-300 hover:bg-slate-800 hover:border-emerald-500/30 flex items-center gap-1.5"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                        </svg>
+                        아카이브
+                      </button>
+                    </div>
                   </div>
                 </div>
               );

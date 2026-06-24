@@ -809,6 +809,24 @@ app.get('/api/map/posts', async (req, res) => {
   }
 });
 
+// --- API: 특정 미션에 연결된 게시글 조회 (아카이브) ---
+app.get('/api/missions/:id/posts', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT p.*, u.username as author, u.profile_image as author_img, b.name as category,
+        (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comment_count
+      FROM posts p
+      JOIN users u ON p.user_id = u.id
+      LEFT JOIN boards b ON p.board_id = b.id
+      WHERE p.mission_id = ?
+      ORDER BY p.created_at DESC
+    `, [req.params.id]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- 6. 미션 (Mission) ---
 app.get('/api/missions', async (req, res) => {
   try {
